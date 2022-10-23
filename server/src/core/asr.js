@@ -27,49 +27,53 @@ class Asr {
    * and forward the WAVE file to the STT parser
    */
   run(blob, stt) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       LogHelper.title('ASR')
 
       this.blob = blob
 
-      fs.writeFile(audios.webm, Buffer.from(this.blob), 'binary', (err) => {
-        if (err) {
-          reject({ type: 'error', obj: err })
-          return
-        }
+      try {
+        await fs.promises.writeFile(
+          audios.webm,
+          Buffer.from(this.blob),
+          'binary'
+        )
+      } catch (error) {
+        reject({ type: 'error', obj: error })
+        return
+      }
 
-        const ffmpeg = new Ffmpeg()
-        ffmpeg.setFfmpegPath(ffmpegPath)
+      const ffmpeg = new Ffmpeg()
+      ffmpeg.setFfmpegPath(ffmpegPath)
 
-        /**
-         * Encode WebM file to WAVE file
-         * ffmpeg -i speech.webm -acodec pcm_s16le -ar 16000 -ac 1 speech.wav
-         */
-        ffmpeg
-          .addInput(audios.webm)
-          .on('start', () => {
-            LogHelper.info('Encoding WebM file to WAVE file...')
-          })
-          .on('end', () => {
-            LogHelper.success('Encoding done')
+      /**
+       * Encode WebM file to WAVE file
+       * ffmpeg -i speech.webm -acodec pcm_s16le -ar 16000 -ac 1 speech.wav
+       */
+      ffmpeg
+        .addInput(audios.webm)
+        .on('start', () => {
+          LogHelper.info('Encoding WebM file to WAVE file...')
+        })
+        .on('end', () => {
+          LogHelper.success('Encoding done')
 
-            if (Object.keys(stt).length === 0) {
-              reject({
-                type: 'warning',
-                obj: new Error('The speech recognition is not ready yet')
-              })
-            } else {
-              stt.parse(audios.wav)
-              resolve()
-            }
-          })
-          .on('error', (err) => {
-            reject({ type: 'error', obj: new Error(`Encoding error ${err}`) })
-          })
-          .outputOptions(['-acodec pcm_s16le', '-ar 16000', '-ac 1'])
-          .output(audios.wav)
-          .run()
-      })
+          if (Object.keys(stt).length === 0) {
+            reject({
+              type: 'warning',
+              obj: new Error('The speech recognition is not ready yet')
+            })
+          } else {
+            stt.parse(audios.wav)
+            resolve()
+          }
+        })
+        .on('error', (err) => {
+          reject({ type: 'error', obj: new Error(`Encoding error ${err}`) })
+        })
+        .outputOptions(['-acodec pcm_s16le', '-ar 16000', '-ac 1'])
+        .output(audios.wav)
+        .run()
     })
   }
 }

@@ -308,7 +308,7 @@ class Nlu {
     )
 
     const { actions, resolvers } = JSON.parse(
-      fs.readFileSync(configDataFilePath, 'utf8')
+      await fs.promises.readFile(configDataFilePath, 'utf8')
     )
     const action = actions[this.nluResultObj.classification.action]
     const { name: expectedItemName, type: expectedItemType } =
@@ -329,7 +329,7 @@ class Nlu {
       const result = await nlpObjs[expectedItemType].process(utterance)
       const { intent } = result
 
-      const resolveResolvers = (resolver, intent) => {
+      const resolveResolvers = async (resolver, intent) => {
         const resolversPath = join(
           process.cwd(),
           'core/data',
@@ -339,7 +339,11 @@ class Nlu {
         // Load the skill resolver or the global resolver
         const resolvedIntents = !intent.includes('resolver.global')
           ? resolvers[resolver]
-          : JSON.parse(fs.readFileSync(join(resolversPath, `${resolver}.json`)))
+          : JSON.parse(
+              await fs.promises.readFile(
+                join(resolversPath, `${resolver}.json`)
+              )
+            )
 
         // E.g. resolver.global.denial -> denial
         intent = intent.substring(intent.lastIndexOf('.') + 1)
@@ -360,7 +364,10 @@ class Nlu {
       ) {
         LogHelper.title('NLU')
         LogHelper.success('Resolvers resolved:')
-        this.nluResultObj.resolvers = resolveResolvers(expectedItemName, intent)
+        this.nluResultObj.resolvers = await resolveResolvers(
+          expectedItemName,
+          intent
+        )
         this.nluResultObj.resolvers.forEach((resolver) =>
           LogHelper.success(`${intent}: ${JSON.stringify(resolver)}`)
         )
@@ -800,7 +807,10 @@ class Nlu {
       // Loop for questions if a slot hasn't been filled
       if (notFilledSlot) {
         const { actions } = JSON.parse(
-          fs.readFileSync(this.nluResultObj.configDataFilePath, 'utf8')
+          await fs.promises.readFile(
+            this.nluResultObj.configDataFilePath,
+            'utf8'
+          )
         )
         const [currentSlot] = actions[
           this.nluResultObj.classification.action

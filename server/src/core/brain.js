@@ -179,7 +179,7 @@ class Brain {
           classification: { action: actionName }
         } = obj
         const { actions } = JSON.parse(
-          fs.readFileSync(configDataFilePath, 'utf8')
+          await fs.promises.readFile(configDataFilePath, 'utf8')
         )
         const action = actions[actionName]
         const { type: actionType } = action
@@ -223,7 +223,10 @@ class Brain {
             }
 
             try {
-              fs.writeFileSync(intentObjectPath, JSON.stringify(intentObj))
+              await fs.promises.writeFile(
+                intentObjectPath,
+                JSON.stringify(intentObj)
+              )
               this.process = spawn(
                 `${PYTHON_BRIDGE_BIN_PATH} ${intentObjectPath}`,
                 { shell: true }
@@ -236,11 +239,9 @@ class Brain {
           const domainName = obj.classification.domain
           const skillName = obj.classification.skill
           const { name: domainFriendlyName } =
-            SkillDomainHelper.getSkillDomainInfo(domainName)
-          const { name: skillFriendlyName } = SkillDomainHelper.getSkillInfo(
-            domainName,
-            skillName
-          )
+            await SkillDomainHelper.getSkillDomainInfo(domainName)
+          const { name: skillFriendlyName } =
+            await SkillDomainHelper.getSkillInfo(domainName, skillName)
           let output = ''
 
           // Read output

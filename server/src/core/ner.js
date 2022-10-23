@@ -36,7 +36,7 @@ class Ner {
       // Remove end-punctuation and add an end-whitespace
       const utterance = `${StringHelper.removeEndPunctuation(obj.utterance)} `
       const { actions } = JSON.parse(
-        fs.readFileSync(utteranceSamplesFilePath, 'utf8')
+        await fs.promises.readFile(utteranceSamplesFilePath, 'utf8')
       )
       const { action } = classification
       const promises = []

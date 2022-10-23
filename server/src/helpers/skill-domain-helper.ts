@@ -31,23 +31,28 @@ export class SkillDomainHelper {
     const skillDomains = new Map<string, SkillDomain>()
 
     await Promise.all(
-      fs.readdirSync(DOMAINS_DIR).map(async (entity) => {
+      (
+        await fs.promises.readdir(DOMAINS_DIR)
+      ).map(async (entity) => {
         const domainPath = path.join(DOMAINS_DIR, entity)
 
-        if (fs.statSync(domainPath).isDirectory()) {
+        if ((await fs.promises.stat(domainPath)).isDirectory()) {
           const skills: SkillDomain['skills'] = {}
           const { name: domainName } = (await import(
             path.join(domainPath, 'domain.json')
           )) as SkillDomain
-          const skillFolders = fs.readdirSync(domainPath)
+          const skillFolders = await fs.promises.readdir(domainPath)
 
           for (let i = 0; i < skillFolders.length; i += 1) {
             const skillAliasName = skillFolders[i] as string
             const skillPath = path.join(domainPath, skillAliasName)
 
-            if (fs.statSync(skillPath).isDirectory()) {
+            if ((await fs.promises.stat(skillPath)).isDirectory()) {
               const { name: skillName, bridge: skillBridge } = JSON.parse(
-                fs.readFileSync(path.join(skillPath, 'skill.json'), 'utf8')
+                await fs.promises.readFile(
+                  path.join(skillPath, 'skill.json'),
+                  'utf8'
+                )
               ) as Skill
 
               skills[skillName] = {
@@ -77,9 +82,14 @@ export class SkillDomainHelper {
    * Get information of a specific domain
    * @param domain Domain to get info from
    */
-  public static getSkillDomainInfo(domain: SkillDomain['name']): unknown {
+  public static async getSkillDomainInfo(
+    domain: SkillDomain['name']
+  ): Promise<unknown> {
     return JSON.parse(
-      fs.readFileSync(path.join(DOMAINS_DIR, domain, 'domain.json'), 'utf8')
+      await fs.promises.readFile(
+        path.join(DOMAINS_DIR, domain, 'domain.json'),
+        'utf8'
+      )
     )
   }
 
@@ -88,12 +98,12 @@ export class SkillDomainHelper {
    * @param domain Domain where the skill belongs
    * @param skill Skill to get info from
    */
-  public static getSkillInfo(
+  public static async getSkillInfo(
     domain: SkillDomain['name'],
     skill: Skill['name']
-  ): unknown {
+  ): Promise<unknown> {
     return JSON.parse(
-      fs.readFileSync(
+      await fs.promises.readFile(
         path.join(DOMAINS_DIR, domain, skill, 'skill.json'),
         'utf8'
       )
@@ -105,22 +115,27 @@ export class SkillDomainHelper {
    * @param configFilePath Path of the skill config file
    * @param lang Language short code
    */
-  public static getSkillConfig(
+  public static async getSkillConfig(
     configFilePath: string,
     lang: ShortLanguageCode
-  ): unknown {
+  ): Promise<unknown> {
     const sharedDataPath = path.join(process.cwd(), 'core/data', lang)
-    const configData = JSON.parse(fs.readFileSync(configFilePath, 'utf8'))
+    const configData = JSON.parse(
+      await fs.promises.readFile(configFilePath, 'utf8')
+    )
     const { entities } = configData
 
     // Load shared data entities if entity = 'xxx.json'
     if (entities) {
       const entitiesKeys = Object.keys(entities)
 
-      entitiesKeys.forEach((entity) => {
+      entitiesKeys.forEach(async (entity) => {
         if (typeof entities[entity] === 'string') {
           entities[entity] = JSON.parse(
-            fs.readFileSync(path.join(sharedDataPath, entities[entity]), 'utf8')
+            await fs.promises.readFile(
+              path.join(sharedDataPath, entities[entity]),
+              'utf8'
+            )
           )
         }
       })
